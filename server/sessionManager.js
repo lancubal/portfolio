@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const { v4: uuidv4 } = require('uuid');
 
 class SessionManager {
@@ -31,7 +31,8 @@ class SessionManager {
         const hiddenPath = '/usr/local/lib/.secret_cache';
         const hiddenFile = 'config.db'; // Camouflage name
         
-        const startCommand = `docker run -d --rm --name ${containerName} --network none --memory 128m --cpus 0.5 python:3.10-alpine sh -c "mkdir -p ${hiddenPath} && echo '${flagContent}' > ${hiddenPath}/${hiddenFile} && sleep infinity"`;
+        // Use custom image 'portfolio-runner' which includes GCC, Rust, Python
+        const startCommand = `docker run -d --rm --name ${containerName} --network none --memory 128m --cpus 0.5 portfolio-runner sh -c "mkdir -p ${hiddenPath} && echo '${flagContent}' > ${hiddenPath}/${hiddenFile} && sleep infinity"`;
 
         console.log(`[${sessionId}] Starting container...`);
 
@@ -60,7 +61,7 @@ class SessionManager {
     }
 
     /**
-     * Executes a command inside the user's container.
+     * Executes a command inside the user's container and waits for result.
      */
     async executeCommand(sessionId, code) {
         const session = this.sessions.get(sessionId);
@@ -73,35 +74,29 @@ class SessionManager {
         session.lastActivity = Date.now();
 
         // Handle 'cd' commands specifically to persist state
-        // Regex to catch "cd /path", "cd ..", "cd"
         if (code.trim().startsWith('cd ')) {
             const targetDir = code.trim().substring(3).trim();
-            // We run "cd <current> && cd <target> && pwd" to verify and get new path
             const checkCmd = `docker exec ${session.name} sh -c "cd ${session.cwd} && cd ${targetDir} && pwd"`;
             
             return new Promise((resolve) => {
                 exec(checkCmd, (error, stdout, stderr) => {
                     if (error) {
-                        // Directory doesn't exist or permission denied
                         resolve({ output: '', error: `cd: ${targetDir}: No such file or directory` });
                     } else {
-                        // Update session CWD
                         session.cwd = stdout.trim();
-                        resolve({ output: '', error: '' }); // cd usually produces no output on success
+                        resolve({ output: '', error: '' });
                     }
                 });
             });
         }
 
         // Standard execution
-        // We prepend "cd <cwd> &&" to maintain the user's location
         const safeCode = code.replace(/"/g, '\\"');
         const execCommand = `docker exec ${session.name} sh -c "cd ${session.cwd} && ${safeCode}"`;
 
         console.log(`[${sessionId}] Executing in ${session.cwd}: ${code}`);
 
         return new Promise((resolve, reject) => {
-            // Timeout for the execution itself
             exec(execCommand, { timeout: 5000 }, (error, stdout, stderr) => {
                 if (error) {
                     if (error.killed) {
@@ -113,6 +108,32 @@ class SessionManager {
             });
         });
     }
+
+    /**
+     * Spawns a command and returns the process for streaming.
+     */
+    spawnCommand(sessionId, code) {
+        const session = this.sessions.get(sessionId);
+        if (!session) throw new Error('Session expired or invalid.');
+
+        session.lastActivity = Date.now();
+
+        // Warning: spawn arguments are an array.
+        // We use 'docker exec -i ...' to keep stdin open if needed, but mainly for streaming stdout
+        const safeCode = code.replace(/"/g, '\\"');
+        
+        // Construct the sh -c command string
+        const shellCommand = `cd ${session.cwd} && ${code}`;
+        
+        console.log(`[${sessionId}] Spawning stream: ${shellCommand}`);
+
+        const child = spawn('docker', ['exec', session.name, 'sh', '-c', shellCommand]);
+        return child;
+    }
+
+    /**
+     * The Janitor: Removes containers that haven't been used recently.
+     */
 
     /**
      * The Janitor: Removes containers that haven't been used recently.

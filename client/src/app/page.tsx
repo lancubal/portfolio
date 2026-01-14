@@ -392,6 +392,52 @@ export default function Home() {
         setTimeout(() => inputRef.current?.focus(), 10);
         return;
     }
+
+    // --- VISUALIZATION (SSE) ---
+    if (command === 'visualize bubble') {
+        setHistory(prev => [...prev, "Compiling and starting visualization..."]);
+        
+        const evtSource = new EventSource(`${API_URL}/stream?sessionId=${sessionId}&vizId=bubble`);
+        
+        // We want to update the LAST line of history effectively to simulate animation
+        // Instead of flooding history, we'll append a "frame" placeholder
+        setHistory(prev => [...prev, ""]); 
+        let frameIndex = -1; // Will rely on setHistory functional update to find last index
+
+        evtSource.onmessage = (event) => {
+            // Data is base64 encoded to preserve special chars
+            const text = atob(event.data);
+            
+            // Simple ANSI parser to detect "Clear Screen" (\033[2J)
+            // If text contains clear screen, we replace the last entry.
+            // Otherwise we append.
+            
+            setHistory(prev => {
+                const newHistory = [...prev];
+                // Replace the last item (our animation frame) with new content
+                // This mimics a full screen refresh
+                newHistory[newHistory.length - 1] = text; 
+                return newHistory;
+            });
+        };
+
+        evtSource.addEventListener('close', () => {
+            evtSource.close();
+            setIsLoading(false);
+            setHistory(prev => [...prev, "\nVisualization finished."]);
+            setTimeout(() => inputRef.current?.focus(), 10);
+        });
+
+        evtSource.onerror = () => {
+            evtSource.close();
+            setIsLoading(false);
+            setHistory(prev => [...prev, "Stream connection closed or failed."]);
+            setTimeout(() => inputRef.current?.focus(), 10);
+        };
+
+        // Don't setIsLoading(false) yet, wait for stream end
+        return;
+    }
     
     // --- STANDARD EXECUTION ---
     try {
