@@ -15,7 +15,7 @@ const VISUALIZATIONS = {
             'void print_array(int arr[], int size, int active1, int active2) {',
             '    puts("Visualizing Bubble Sort (C)");',
             '    puts("Description: Compares adjacent pairs and swaps them if they are in the wrong order.");',
-            '    puts("             Largest values \"bubble up\" to the end of the list.");',
+            '    puts("             Largest values \\\"bubble up\\\" to the end of the list.");',
             '    puts("---------------------------------------------------------------------------");',
             '    for (int i = 0; i < size; i++) {',
             '        for (int j = 0; j < arr[i]; j++) printf("#");',
