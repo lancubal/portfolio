@@ -1,0 +1,7 @@
+[SessionManager] Garbage Collector started.
+Server listening at http://localhost:3001
+Stateful Architecture: Ready.
+[7362edb4-d44d-474e-b79c-cc5e4bbd4a41] Starting container...
+[7362edb4-d44d-474e-b79c-cc5e4bbd4a41] Container started: 4aaa72a0c90f
+[7362edb4-d44d-474e-b79c-cc5e4bbd4a41] Executing: echo 'I survived!' > persistent.txt
+[7362edb4-d44d-474e-b79c-cc5e4bbd4a41] Executing: ls -l persistent.txt && cat persistent.txt
