@@ -10,30 +10,9 @@ const CHALLENGES = {
         description: "The 'add' function is subtracting. Fix it.",
         testFile: "test_calc.py",
         files: {
-            'calculator.py': 
-"\n" +
-"class Calculator:\n"
-"    def add(self, a, b):\n"
-"        # BUG: This should be addition!\n"
-"        return a - b\n"
-"\n"
-"    def subtract(self, a, b):\n"
-"        return a - b\n",
+            'calculator.py': "class Calculator:\n    def add(self, a, b):\n        # BUG: This should be addition!\n        return a - b\n\n    def subtract(self, a, b):\n        return a - b",
 
-            'test_calc.py': 
-"\n" +
-"import unittest\n"
-"from calculator import Calculator\n"
-"\n"
-"class TestCalculator(unittest.TestCase):\n"
-"    def setUp(self):        self.calc = Calculator()\n"
-"\n"
-"    def test_add(self):\n"
-"        self.assertEqual(self.calc.add(5, 3), 8, '5 + 3 should be 8')\n"
-"        self.assertEqual(self.calc.add(-1, 1), 0, '-1 + 1 should be 0')\n"
-"\n"
-"if __name__ == '__main__':\n"
-"    unittest.main()\n"
+            'test_calc.py': "import unittest\nfrom calculator import Calculator\n\nclass TestCalculator(unittest.TestCase):\n    def setUp(self):        self.calc = Calculator()\n\n    def test_add(self):\n        self.assertEqual(self.calc.add(5, 3), 8, '5 + 3 should be 8')\n        self.assertEqual(self.calc.add(-1, 1), 0, '-1 + 1 should be 0')\n\nif __name__ == '__main__':\n    unittest.main()"
         }
     },
     '2': {
@@ -41,30 +20,9 @@ const CHALLENGES = {
         description: "This function thinks 'racer' is a palindrome just because it starts and ends with 'r'. Fix logic.",
         testFile: "test_pal.py",
         files: {
-            'palindrome.py':
-"\n" +
-"def is_palindrome(word):\n"
-"    # BUG: This only checks start and end chars!\n"
-"    # We need to check the whole word.\n"
-"    if len(word) <= 1: return True\n"
-"    return word[0] == word[-1]\n",
+            'palindrome.py':"\ndef is_palindrome(word):\n    # BUG: This only checks start and end chars!\n    # We need to check the whole word.\n    if len(word) <= 1: return True\n    return word[0] == word[-1]",
 
-            'test_pal.py':
-"\n" +
-"import unittest\n"
-"from palindrome import is_palindrome\n"
-"\n"
-"class TestPalindrome(unittest.TestCase):\n"
-"    def test_true(self):\n"
-"        self.assertTrue(is_palindrome('racecar'))\n"
-"        self.assertTrue(is_palindrome('a'))\n"
-"\n"
-"    def test_false(self):\n"
-"        self.assertFalse(is_palindrome('racer'), 'racer starts/ends with r but is NOT a palindrome')\n"
-"        self.assertFalse(is_palindrome('hello'))\n"
-"\n"
-"if __name__ == '__main__':\n"
-"    unittest.main()\n"
+            'test_pal.py': "\nimport unittest\nfrom palindrome import is_palindrome\n\nclass TestPalindrome(unittest.TestCase):\n    def test_true(self):\n        self.assertTrue(is_palindrome('racecar'))\n        self.assertTrue(is_palindrome('a'))\n\n    def test_false(self):\n        self.assertFalse(is_palindrome('racer'), 'racer starts/ends with r but is NOT a palindrome')\n        self.assertFalse(is_palindrome('hello'))\n\nif __name__ == '__main__':\n    unittest.main()"
         }
     },
     '3': {
@@ -72,32 +30,9 @@ const CHALLENGES = {
         description: "Find the max number. Works fine... until you give it negative numbers.",
         testFile: "test_max.py",
         files: {
-            'max_finder.py':
-"\n" +
-"def find_max(numbers):\n"
-"    if not numbers: return None\n"
-"    # BUG: Initializing to 0 fails if all numbers are negative (e.g. [-5, -10])\n"
-"    max_val = 0\n"
-"    for n in numbers:\n"
-"        if n > max_val:\n"
-"            max_val = n\n"
-"    return max_val\n",
+            'max_finder.py': "\ndef find_max(numbers):\n    if not numbers: return None\n    # BUG: Initializing to 0 fails if all numbers are negative (e.g. [-5, -10])\n    max_val = 0\n    for n in numbers:\n        if n > max_val:\n            max_val = n\n    return max_val",
 
-            'test_max.py':
-"\n" +
-"import unittest\n"
-"from max_finder import find_max\n"
-"\n"
-"class TestMax(unittest.TestCase):\n"
-"    def test_positive(self):\n"
-"        self.assertEqual(find_max([1, 5, 3]), 5)\n"
-"\n"
-"    def test_negative(self):\n"
-"        # Should return -1, but returns 0 because of the bug\n"
-"        self.assertEqual(find_max([-5, -1, -10]), -1, 'Failed with all negative numbers')\n"
-"\n"
-"if __name__ == '__main__':\n"
-"    unittest.main()\n"
+            'test_max.py': "\nimport unittest\nfrom max_finder import find_max\n\nclass TestMax(unittest.TestCase):\n    def test_positive(self):\n        self.assertEqual(find_max([1, 5, 3]), 5)\n\n    def test_negative(self):\n        # Should return -1, but returns 0 because of the bug\n        self.assertEqual(find_max([-5, -1, -10]), -1, 'Failed with all negative numbers')\n\nif __name__ == '__main__':\n    unittest.main()"
         }
     },
     '4': {
@@ -105,25 +40,9 @@ const CHALLENGES = {
         description: "Calculate Factorial. Warning: This code might crash the simulation if not fixed.",
         testFile: "test_fact.py",
         files: {
-            'factorial.py':
-"\n" +
-"def factorial(n):\n" +
-"    # BUG: Where is the base case? (if n == 0: return 1)\n" +
-"    # This will run forever!\n" +
-"    return n * factorial(n - 1)\n",
+            'factorial.py': "\ndef factorial(n):\n    # BUG: Where is the base case? (if n == 0: return 1)\n    # This will run forever!\n    return n * factorial(n - 1)",
 
-            'test_fact.py':
-"\n" +
-"import unittest\n" +
-"from factorial import factorial\n" +
-"\n" +
-"class TestFactorial(unittest.TestCase):\n" +
-"    def test_fact(self):\n" +
-"        self.assertEqual(factorial(5), 120)\n" +
-"        self.assertEqual(factorial(0), 1)\n" +
-"\n" +
-"if __name__ == '__main__':\n" +
-"    unittest.main()\n"
+            'test_fact.py': "\nimport unittest\nfrom factorial import factorial\n\nclass TestFactorial(unittest.TestCase):\n    def test_fact(self):\n        self.assertEqual(factorial(5), 120)\n        self.assertEqual(factorial(0), 1)\n\nif __name__ == '__main__':\n    unittest.main()"
         }
     },
     '5': {
@@ -132,24 +51,7 @@ const CHALLENGES = {
         testFile: "test_bash.py",
         files: {
             'cleaner.sh': "#!/bin/sh\n# Write your code here to delete *.log files\n",
-            'test_bash.py': 
-"\n" +
-"import unittest, os, subprocess\n" +
-"class TestBash(unittest.TestCase):\n" +
-"    def test_cleanup(self):\n" +
-"        # 1. Create dummy files\n" +
-"        open('test1.log', 'w').close()\n" +
-"        open('test2.log', 'w').close()\n" +
-"        open('keep.txt', 'w').close()\n" +
-"        # 2. Run user script\n" +
-"        subprocess.run(['sh', 'cleaner.sh'])\n" +
-"        # 3. Check results\n" +
-"        files = os.listdir('.')\n" +
-"        self.assertNotIn('test1.log', files)\n" +
-"        self.assertNotIn('test2.log', files)\n" +
-"        self.assertIn('keep.txt', files)\n" +
-"if __name__ == '__main__':\n" +
-"    unittest.main()\n"
+            'test_bash.py': "\nimport unittest, os, subprocess\nclass TestBash(unittest.TestCase):\n    def test_cleanup(self):\n        # 1. Create dummy files\n        open('test1.log', 'w').close()\n        open('test2.log', 'w').close()\n        open('keep.txt', 'w').close()\n        # 2. Run user script\n        subprocess.run(['sh', 'cleaner.sh'])\n        # 3. Check results\n        files = os.listdir('.')\n        self.assertNotIn('test1.log', files)\n        self.assertNotIn('test2.log', files)\n        self.assertIn('keep.txt', files)\nif __name__ == '__main__':\n    unittest.main()"
         }
     },
     '6': {
@@ -157,31 +59,9 @@ const CHALLENGES = {
         description: "The login logic in 'auth.py' is vulnerable to SQL Injection. Fix it using parameterized queries.",
         testFile: "test_sqli.py",
         files: {
-            'auth.py':
-"\n" +
-"import sqlite3\n" +
-"def login(username, password):\n" +
-"    db = sqlite3.connect(':memory:')\n" +
-"    db.execute('CREATE TABLE users (user text, pass text)')\n" +
-"    db.execute("INSERT INTO users VALUES ('admin', 'top-secret-123')")\n" +
-"    # BUG: Vulnerable string formatting!\n" +
-"    query = f\"SELECT * FROM users WHERE user = '{username}' AND pass = '{password}'\"\n" +
-"    cursor = db.execute(query)\n" +
-"    return cursor.fetchone() is not None\n",
+            'auth.py': "\nimport sqlite3\nimport sqlite3\ndef login(username, password):\n    db = sqlite3.connect(':memory:')\n    db.execute('CREATE TABLE users (user text, pass text)')\n    db.execute(\"INSERT INTO users VALUES ('admin', 'top-secret-123')\")\n    # BUG: Vulnerable string formatting!\n    query = f\"SELECT * FROM users WHERE user = '{username}' AND pass = '{password}'\"\n    cursor = db.execute(query)\n    return cursor.fetchone() is not None",
 
-            'test_sqli.py':
-"\n" +
-"import unittest\n" +
-"from auth import login\n" +
-"class TestSecurity(unittest.TestCase):\n" +
-"    def test_normal_login(self):\n" +
-"        self.assertTrue(login('admin', 'top-secret-123'))\n" +
-"    def test_sqli_attack(self):\n" +
-"        # This should FAIL if the code is secured\n" +
-"        attack_success = login(\"admin' --\", 'wrong-password')\n" +
-"        self.assertFalse(attack_success, 'SECURITY ALERT: SQL Injection bypassed login!')\n" +
-"if __name__ == '__main__':\n" +
-"    unittest.main()\n"
+            'test_sqli.py': "\nimport unittest\nfrom auth import login\nclass TestSecurity(unittest.TestCase):\n    def test_normal_login(self):\n        self.assertTrue(login('admin', 'top-secret-123'))\n    def test_sqli_attack(self):\n        # This should FAIL if the code is secured\n        attack_success = login(\"admin' --\", 'wrong-password')\n        self.assertFalse(attack_success, 'SECURITY ALERT: SQL Injection bypassed login!')\nif __name__ == '__main__':\n    unittest.main()"
         }
     }
 };
