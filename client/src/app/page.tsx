@@ -230,10 +230,9 @@ export default function Home() {
             "  whoami         - Display current user",
             "  login <name>   - Set your username",
             "",
-            "  -- Visualizations --",
+  -- Visualizations --
             "  visualize <id> - View algorithms in real-time",
-            "                   (bubble, selection, quick)",
-            "",
+            "                   (bubble, selection, quick, pathfinder)",
             "  -- Challenge Mode (Unit Testing) --",
             "  challenge      - List available coding challenges",
             "  start <id>     - Start a specific challenge (e.g., 'start 1')",
