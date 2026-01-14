@@ -6,6 +6,7 @@ const request = require('supertest');
 const app = require('../index');
 const sessionManager = require('../sessionManager');
 const challengeManager = require('../challengeManager');
+const visualizationManager = require('../visualizationManager');
 
 jest.mock('../sessionManager');
 jest.mock('../challengeManager');
@@ -55,5 +56,30 @@ describe('API Endpoints', () => {
         expect(response.statusCode).toBe(200);
         expect(Array.isArray(response.body)).toBe(true);
         expect(response.body[0].name).toBe('Test');
+    });
+
+    test('GET /stream should setup SSE headers and start streaming', async () => {
+        visualizationManager.prepareVisualization.mockResolvedValue('./app');
+        
+        const mockChild = {
+            stdout: { on: jest.fn() },
+            stderr: { on: jest.fn() },
+            on: jest.fn((event, cb) => {
+                if (event === 'close') {
+                    // Simulate process closing after a short delay
+                    setTimeout(() => cb(0), 100);
+                }
+            }),
+            kill: jest.fn()
+        };
+        sessionManager.spawnCommand.mockReturnValue(mockChild);
+
+        const response = await request(app)
+            .get('/stream')
+            .query({ sessionId: 'test-id', vizId: 'bubble' });
+
+        expect(response.get('Content-Type')).toBe('text/event-stream');
+        expect(response.get('Connection')).toBe('keep-alive');
+        expect(sessionManager.spawnCommand).toHaveBeenCalledWith('test-id', './app');
     });
 });
