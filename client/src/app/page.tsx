@@ -230,7 +230,7 @@ export default function Home() {
             "  whoami         - Display current user",
             "  login <name>   - Set your username",
             "",
-  -- Visualizations --
+            "  -- Visualizations --",
             "  visualize <id> - View algorithms in real-time",
             "                   (bubble, selection, quick, pathfinder, dfs)",
             "",
