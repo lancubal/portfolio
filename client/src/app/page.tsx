@@ -109,23 +109,17 @@ export default function Home() {
     
     if (!sessionId) return;
     
-    // Save file back to container
-    // We use a simple echo. For complex code with special chars, we might need Base64 encoding transfer in future.
-    // For this simple calculator challenge, basic stringify is okay but we must be careful with newlines.
+    // Robust Saving using Base64
+    // 1. Encode content to Base64 in browser
+    // 2. Send command: echo "B64" | base64 -d > filename
     
-    // Better approach: wrap in EOF heredoc logic managed by the backend or client
-    // Here we will use the exec endpoint directly, but we need to escape quotes.
-    
-    // Simpler: Use a client-side trick to write line by line or use a more robust backend 'upload' endpoint?
-    // Let's rely on the sessionManager's ability to handle the command.
-    // We'll escape double quotes.
-    const safeContent = content.replace(/"/g, '\\"');
-    const cmd = `printf "${safeContent}" > ${editorFilename}`;
-    
-    setIsLoading(true);
-    setHistory(prev => [...prev, `> Saving ${editorFilename}...`]);
-
     try {
+        const b64 = btoa(content);
+        const cmd = `echo "${b64}" | base64 -d > ${editorFilename}`;
+        
+        setIsLoading(true);
+        setHistory(prev => [...prev, `> Saving ${editorFilename}...`]);
+
         await fetch('http://localhost:3001/exec', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -133,7 +127,7 @@ export default function Home() {
         });
         setHistory(prev => [...prev, `> Saved.`]);
     } catch (err) {
-        setHistory(prev => [...prev, `> Error saving file.`]);
+        setHistory(prev => [...prev, `> Error saving file: ${err instanceof Error ? err.message : 'Unknown'}`]);
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 10);

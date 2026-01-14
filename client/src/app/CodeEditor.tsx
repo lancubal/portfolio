@@ -29,9 +29,6 @@ export default function CodeEditor({ isOpen, filename, initialContent, onSave, o
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-zinc-200">NANO Editor: {filename}</span>
           </div>
-          <div className="flex gap-2">
-             <span className="text-xs text-zinc-400">Ctrl+S to Save</span>
-          </div>
         </div>
 
         {/* Editor Area */}
