@@ -230,6 +230,10 @@ export default function Home() {
             "  whoami         - Display current user",
             "  login <name>   - Set your username",
             "",
+            "  -- Visualizations --",
+            "  visualize <id> - View algorithms in real-time",
+            "                   (bubble, selection, quick)",
+            "",
             "  -- Challenge Mode (Unit Testing) --",
             "  challenge      - List available coding challenges",
             "  start <id>     - Start a specific challenge (e.g., 'start 1')",
@@ -394,28 +398,20 @@ export default function Home() {
     }
 
     // --- VISUALIZATION (SSE) ---
-    if (command === 'visualize bubble') {
-        setHistory(prev => [...prev, "Compiling and starting visualization..."]);
+    if (command.startsWith('visualize ')) {
+        const vizId = command.split(' ')[1];
+        setHistory(prev => [...prev, `Compiling and starting ${vizId} visualization...`]);
         
-        const evtSource = new EventSource(`${API_URL}/stream?sessionId=${sessionId}&vizId=bubble`);
+        const evtSource = new EventSource(`${API_URL}/stream?sessionId=${sessionId}&vizId=${vizId}`);
         
         // We want to update the LAST line of history effectively to simulate animation
-        // Instead of flooding history, we'll append a "frame" placeholder
         setHistory(prev => [...prev, ""]); 
-        let frameIndex = -1; // Will rely on setHistory functional update to find last index
 
         evtSource.onmessage = (event) => {
-            // Data is base64 encoded to preserve special chars
             const text = atob(event.data);
-            
-            // Simple ANSI parser to detect "Clear Screen" (\033[2J)
-            // If text contains clear screen, we replace the last entry.
-            // Otherwise we append.
             
             setHistory(prev => {
                 const newHistory = [...prev];
-                // Replace the last item (our animation frame) with new content
-                // This mimics a full screen refresh
                 newHistory[newHistory.length - 1] = text; 
                 return newHistory;
             });
@@ -431,11 +427,10 @@ export default function Home() {
         evtSource.onerror = () => {
             evtSource.close();
             setIsLoading(false);
-            setHistory(prev => [...prev, "Stream connection closed or failed."]);
+            setHistory(prev => [...prev, "Stream connection closed or failed (Check algorithm ID)."]);
             setTimeout(() => inputRef.current?.focus(), 10);
         };
 
-        // Don't setIsLoading(false) yet, wait for stream end
         return;
     }
     
