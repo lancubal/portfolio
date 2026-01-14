@@ -175,12 +175,12 @@ export default function Home() {
     if (command === 'about' || command === 'neofetch' || command === 'screenfetch') {
         const logo = [
             "       ▲       ",
-            "      / \      ",
-            "     / ▲ \     ",
-            "    / / \ \    ",
-            "   / /   \ \   ",
-            "  / /_____\ \_ ",
-            " /___________/_\"
+            "      / \\      ",
+            "     / ▲ \\     ",
+            "    / / \\ \\    ",
+            "   / /   \\ \\   ",
+            "  / /_____\\ \\_ ",
+            " /___________/_\\"
         ];
 
         const info = [
