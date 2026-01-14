@@ -19,9 +19,16 @@ This project moves beyond simple "stateless" script execution by implementing a 
     *   **Session Manager:** Orchestrates the lifecycle of Docker containers.
     *   **Garbage Collector:** A background process that monitors activity and kills abandoned containers (default timeout: 10 minutes) to prevent resource exhaustion.
     
-3.  **Execution Engine (Docker + Alpine Linux):**
+3.  **Execution Engine (Docker + Custom Runner):**
     *   **Persistence:** Containers are started with `sleep infinity` to maintain state (filesystem changes, variables) throughout the user's session.
-    *   **Isolation:** Strict resource limits (CPU, RAM) and network policies (coming soon).
+    *   **Isolation:** Strict resource limits (CPU, RAM).
+    *   **Streaming:** Real-time stdout streaming via Server-Sent Events (SSE) for intensive tasks.
+
+### 🎮 Interactive Features
+
+*   **CTF Challenge:** A hidden flag is buried deep in the system. Find it and decode it to get my secret contact info.
+*   **Coding Challenges:** Fixed broken logic in real-time. The system runs unit tests inside the container and celebrates your victory with confetti.
+*   **Algorithm Visualization:** Watch C/Rust algorithms run step-by-step with retro ASCII animations streamed directly from the container.
 
 ### System Flow
 
