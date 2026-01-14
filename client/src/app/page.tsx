@@ -1,28 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Home() {
-  const [input, setInput] = useState('echo "Hello World" > hello.txt && ls -l');
-  const [output, setOutput] = useState<string>('');
+  const [input, setInput] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Refs for auto-scrolling and focus
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize Session on Load
+  // Focus input on click anywhere in terminal
+  const handleTerminalClick = () => {
+    inputRef.current?.focus();
+  };
+
+  // Auto-scroll to bottom when history changes
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [history]);
+
+  // Initialize Session
   useEffect(() => {
     const initSession = async () => {
       try {
         const res = await fetch('http://localhost:3001/start', { method: 'POST' });
         const data = await res.json();
+        
         if (data.sessionId) {
           setSessionId(data.sessionId);
-          setOutput('Connected to Cloud Shell.\nContainer ready.');
+          setHistory([
+            "Welcome to the Interactive Cloud Shell Portfolio.",
+            "Copyright (c) 2026 Agustin Lancuba.",
+            "Type 'help' to see available commands or just standard Linux commands.",
+            "------------------------------------------------------------------",
+            ""
+          ]);
         } else {
-          setOutput('Failed to initialize session.');
+          setHistory(["Error: Failed to initialize session."]);
         }
       } catch (err) {
-        setOutput(`Connection Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        setHistory([`Connection Error: ${err instanceof Error ? err.message : 'Unknown error'}`]);
       } finally {
         setIsInitializing(false);
       }
@@ -31,15 +52,21 @@ export default function Home() {
     initSession();
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    
+    if (!input.trim()) return;
     if (!sessionId) {
-        setOutput("Error: No active session. Please refresh.");
+        setHistory(prev => [...prev, "Error: No active session. Please refresh."]);
         return;
     }
 
+    const command = input;
+    setInput(''); // Clear input immediately
     setIsLoading(true);
-    // Append command to output history (simulated terminal)
-    setOutput(prev => prev + `\n\n$ ${input}`);
+
+    // Optimistically add command to history
+    setHistory(prev => [...prev, `guest@portfolio:~$ ${command}`]);
     
     try {
       const response = await fetch('http://localhost:3001/exec', {
@@ -47,66 +74,88 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sessionId, code: input }),
+        body: JSON.stringify({ sessionId, code: command }),
       });
 
       const data = await response.json();
       
+      let outputText = '';
       if (data.error) {
-        setOutput(prev => prev + `\n${data.error}`);
-        if (data.output) setOutput(prev => prev + `\n${data.output}`);
+        outputText = data.error;
+        if (data.output) outputText += `\n${data.output}`;
       } else {
-        setOutput(prev => prev + `\n${data.output}`);
+        outputText = data.output;
       }
+      
+      // Remove trailing newline for cleaner UI if present
+      if (outputText.endsWith('\n')) {
+        outputText = outputText.slice(0, -1);
+      }
+
+      setHistory(prev => [...prev, outputText]);
+
     } catch (error) {
-      setOutput(prev => prev + `\nNetwork Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      setHistory(prev => [...prev, `Network Error: ${error instanceof Error ? error.message : 'Unknown'}`]);
     } finally {
       setIsLoading(false);
+      // Keep focus on input after execution
+      setTimeout(() => inputRef.current?.focus(), 10);
     }
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start p-10 bg-gray-950 text-white font-mono">
-      <h1 className="text-3xl font-bold mb-6 text-green-400">RCE Cloud Shell (Persistent)</h1>
+    <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 font-mono text-sm md:p-10">
       
-      <div className="w-full max-w-5xl flex flex-col gap-6">
+      {/* Terminal Window */}
+      <div 
+        className="relative flex h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-zinc-800 bg-black shadow-2xl"
+        onClick={handleTerminalClick}
+      >
         
-        {/* Terminal Output Area */}
-        <div className="w-full h-96 bg-black border border-gray-800 rounded-lg p-4 overflow-y-auto shadow-2xl">
-          <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-            {isInitializing ? 'Booting container...' : output}
-          </pre>
+        {/* Title Bar */}
+        <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4 py-2">
+          <div className="flex gap-2">
+            <div className="h-3 w-3 rounded-full bg-red-500/80"></div>
+            <div className="h-3 w-3 rounded-full bg-yellow-500/80"></div>
+            <div className="h-3 w-3 rounded-full bg-green-500/80"></div>
+          </div>
+          <div className="text-zinc-400">guest@portfolio: ~</div>
+          <div className="w-10"></div> {/* Spacer for centering */}
         </div>
 
-        {/* Input Area */}
-        <div className="flex flex-col gap-2">
-            <label className="text-sm text-gray-400">Command Input (Alpine Linux Shell):</label>
-            <div className="flex gap-4">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    className="flex-1 bg-gray-900 border border-gray-700 rounded-md px-4 py-3 text-white focus:ring-2 focus:ring-green-500 outline-none"
-                    placeholder="ls -la"
-                    disabled={isLoading || isInitializing}
-                />
-                <button
-                    onClick={handleSubmit}
-                    disabled={isLoading || isInitializing}
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-md font-bold disabled:opacity-50 transition-all"
-                >
-                    {isLoading ? '...' : 'Run'}
-                </button>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-4 text-zinc-300 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+          
+          {isInitializing && (
+            <div className="animate-pulse text-green-500">Initializing secure environment...</div>
+          )}
+
+          {history.map((line, i) => (
+            <div key={i} className="whitespace-pre-wrap break-words leading-relaxed mb-1">
+              {line}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-                Tip: Try <code>touch test.txt</code> then <code>ls</code>. Your files persist until session timeout (10m).
-            </p>
-        </div>
+          ))}
 
-        {/* Session Info */}
-        <div className="text-xs text-gray-600 text-center">
-            Session ID: {sessionId || 'Connecting...'}
+          {/* Active Input Line */}
+          {!isInitializing && (
+            <form onSubmit={handleSubmit} className="flex items-center">
+              <span className="mr-2 text-green-500 shrink-0">guest@portfolio:~$</span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={isLoading}
+                autoFocus
+                className="w-full flex-1 border-none bg-transparent p-0 text-zinc-100 outline-none focus:ring-0 placeholder-zinc-600"
+                autoComplete="off"
+                spellCheck="false"
+              />
+            </form>
+          )}
+
+          {/* Spacer to allow scrolling past the bottom */}
+          <div ref={terminalEndRef} className="h-4" />
         </div>
       </div>
     </main>
