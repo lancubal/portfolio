@@ -58,15 +58,19 @@ class SessionManager {
 
                 const containerId = stdout.trim();
                 const now = Date.now();
+                
+                // Create a more traditional Linux home directory structure
+                const setupDirsCommand = `docker exec ${containerName} sh -c "mkdir -p /home/guest && cd /home/guest && mkdir .config .local .ssh Desktop Documents Downloads"`;
+                exec(setupDirsCommand);
+
                 this.sessions.set(sessionId, {
                     containerId: containerId,
                     name: containerName,
-                    cwd: '/home',
+                    cwd: '/home/guest',
                     lastActivity: now,
                     createdAt: now
                 });
 
-                exec(`docker exec ${containerName} mkdir -p /home`);
                 console.log(`[${sessionId}] Started. Total active: ${this.sessions.size}`);
                 resolve(sessionId);
             });
@@ -148,6 +152,29 @@ class SessionManager {
         });
 
         child.unref(); // Allow the parent (our server) to exit independently
+    }
+
+    /**
+     * Gets file/directory completions for a partial path.
+     */
+    async getCompletions(sessionId, partial) {
+        const session = this.sessions.get(sessionId);
+        if (!session) return [];
+
+        // `ls -d` is crucial to list directory names instead of their contents
+        // `2>/dev/null` suppresses errors like "No such file or directory"
+        const listCommand = `ls -d -- ${partial}* 2>/dev/null`;
+        const execCommand = `docker exec ${session.name} sh -c "cd ${session.cwd} && ${listCommand}"`;
+
+        return new Promise((resolve) => {
+            exec(execCommand, (error, stdout, stderr) => {
+                if (error || stderr) {
+                    return resolve([]);
+                }
+                const completions = stdout.split('\n').filter(Boolean).map(line => line.trim());
+                resolve(completions);
+            });
+        });
     }
 
     /**

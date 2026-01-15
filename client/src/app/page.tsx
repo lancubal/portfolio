@@ -32,6 +32,37 @@ export default function Home() {
   // Ref to hold the active EventSource stream for commands like 'top' or 'visualize'
   const streamRef = useRef<EventSource | null>(null);
 
+  const ALL_COMMANDS = [
+    // Custom
+    'ls projects',
+    'cat about-me.md',
+    'visualize',
+    'challenge',
+    'start',
+    'edit',
+    'verify',
+    'about',
+    'neofetch',
+    'screenfetch',
+    'top',
+    'help',
+    'clear',
+    'whoami',
+    'login',
+    // Common Linux
+    'ls',
+    'pwd',
+    'echo',
+    'touch',
+    'rm',
+    'mkdir',
+    'cd',
+    'cat',
+    'python',
+    'gcc',
+    'rustc'
+  ];
+
   // --- PORTFOLIO DATA ---
   const PROJECTS = [
     {
@@ -174,6 +205,40 @@ export default function Home() {
         }
     } else if (e.key === 'Enter') {
         handleSubmit();
+    } else if (e.key === 'Tab') {
+        e.preventDefault();
+        
+        if (input.includes(' ')) { // Path completion
+            const parts = input.trim().split(' ');
+            const partialPath = parts[parts.length - 1];
+            
+            fetch(`${API_URL}/autocomplete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, partial: partialPath })
+            }).then(res => res.json()).then(data => {
+                if (data.completions && data.completions.length > 0) {
+                    if (data.completions.length === 1) {
+                        const completed = data.completions[0];
+                        const lastPartIndex = input.lastIndexOf(' ');
+                        const newInput = input.substring(0, lastPartIndex) + ` ${completed}`;
+                        setInput(newInput + (completed.endsWith('/') ? '' : ' '));
+                    } else {
+                        setHistory(prev => [...prev, { text: `${username}@RootResume:~$ ${input}`, type: 'cmd' }]);
+                        setHistory(prev => [...prev, { text: data.completions.join('\t'), type: 'output' }]);
+                    }
+                }
+            }).catch(err => console.error("Autocomplete failed:", err));
+
+        } else { // Command completion
+            const matches = ALL_COMMANDS.filter(cmd => cmd.startsWith(input));
+            if (matches.length === 1) {
+                setInput(matches[0] + ' ');
+            } else if (matches.length > 1) {
+                setHistory(prev => [...prev, { text: `${username}@RootResume:~$ ${input}`, type: 'cmd' }]);
+                setHistory(prev => [...prev, { text: matches.join('\t'), type: 'output' }]);
+            }
+        }
     }
   };
 
@@ -194,105 +259,70 @@ export default function Home() {
     setIsLoading(true);
 
     setHistory(prev => [...prev, { text: `${username}@RootResume:~$ ${command}`, type: 'cmd' }]);
+    
+    // --- START COMMAND HANDLING ---
 
     // --- Client-Side Commands ---
     if (command === 'about' || command === 'neofetch' || command === 'screenfetch') {
         const logo = [
-            "  RRRRRRRRR   ",
-            "  RR      RR  ",
-            "  RR      RR  ",
-            "  RRRRRRRRR   ",
-            "  RR    RR    ",
-            "  RR     RR   ",
-            "  RR      RR  "
+            "  RRRRRRRRR   ", "  RR      RR  ", "  RR      RR  ",
+            "  RRRRRRRRR   ", "  RR    RR    ", "  RR     RR   ", "  RR      RR  "
         ];
-
         const info = [
-            `USER: ${username}`,
-            "OS: RootResume OS (Alpine)",
-            "HOST: Portfolio-Runner-v1",
-            "UPTIME: 1 hour max",
-            "PACKAGES: GCC, Rust, Python, SQLite",
-            "SHELL: Custom React-Bash",
-            "CPU: 0.5 Virtual Cores",
-            "MEMORY: 128MB",
-            "ARCH: x86_64",
-            "DE: TailwindCSS-v3",
-            "WM: NextJS-AppRouter"
+            `USER: ${username}`, "OS: RootResume OS (Alpine)", "HOST: Portfolio-Runner-v1",
+            "UPTIME: 1 hour max", "PACKAGES: GCC, Rust, Python, SQLite", "SHELL: Custom React-Bash",
+            "CPU: 0.5 Virtual Cores", "MEMORY: 128MB", "ARCH: x86_64",
+            "DE: TailwindCSS-v3", "WM: NextJS-AppRouter"
         ];
-
         setHistory(prev => [...prev, { text: "", type: 'output' }]);
         for (let i = 0; i < Math.max(logo.length, info.length); i++) {
             const l = (logo[i] || "").padEnd(18, ' ');
             const r = info[i] || "";
-            // We'll format this carefully in the render loop or join it here
             setHistory(prev => [...prev, { text: `${l} ${r}`, type: i < logo.length ? 'logo' : 'output' }]);
         }
         setHistory(prev => [...prev, { text: "", type: 'output' }]);
-        
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 10);
-        return;
-    }
 
-    if (command === 'help') {
+    } else if (command === 'help') {
         const helpLines = [
-            "Available Commands:",
-            "  ls projects    - View my projects",
-            "  cat about-me.md- My bio",
-            "  visualize <id> - Run algo demo (bubble, selection, quick, pathfinder, dfs)",
-            "  challenge      - Enter coding mode",
-            "  command &      - Run a command in the background",
-            "  -- System --",
-            "  about          - View system architecture",
-            "  neofetch       - Display system info (style!)",
-            "  top            - Real-time container resource usage",
-            "  help           - Show this help message",
-            "  clear          - Clear terminal",
+            "Available Commands:", "  ls projects    - View my projects", "  cat about-me.md- My bio",
+            "  visualize <id> - Run algo demo (bubble, selection, quick, pathfinder, dfs)", "  challenge      - Enter coding mode",
+            "  command &      - Run a command in the background", "  -- System --", "  about          - View system architecture",
+            "  neofetch       - Display system info (style!)", "  top            - Real-time container resource usage",
+            "  help           - Show this help message", "  clear          - Clear terminal",
             "  [linux]        - Run real commands (ls, python, etc.)"
         ];
         helpLines.forEach(l => pushToHistory(l));
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 10);
-        return;
-    }
 
-    if (command === 'clear') {
+    } else if (command === 'clear') {
         setHistory([]);
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 10);
-        return;
-    }
 
-    if (command === 'ls projects') {
+    } else if (command === 'ls projects') {
         pushToHistory(JSON.stringify(PROJECTS, null, 2));
         setIsLoading(false);
-        return;
-    }
 
-    if (command === 'cat about-me.md') {
+    } else if (command === 'cat about-me.md') {
         pushToHistory(ABOUT_ME);
         setIsLoading(false);
-        return;
-    }
 
-    if (command === 'whoami') {
+    } else if (command === 'whoami') {
         pushToHistory(username);
         setIsLoading(false);
-        return;
-    }
 
-    if (command.startsWith('login ')) {
+    } else if (command.startsWith('login ')) {
         const name = command.split(' ')[1];
         if (name) {
             setUsername(name);
             pushToHistory(`> Authenticated as: ${name}`);
         }
         setIsLoading(false);
-        return;
-    }
 
-    if (command === 'challenge') {
+    } else if (command === 'challenge') {
         try {
             const res = await fetch(`${API_URL}/challenges`);
             const list = await res.json();
@@ -302,15 +332,12 @@ export default function Home() {
             pushToHistory("Error fetching challenges.", 'error');
         }
         setIsLoading(false);
-        return;
-    }
 
-    if (command.startsWith('start ')) {
+    } else if (command.startsWith('start ')) {
         const id = command.split(' ')[1];
         try {
             const res = await fetch(`${API_URL}/challenge/load`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId, challengeId: id })
             });
             const data = await res.json();
@@ -320,38 +347,35 @@ export default function Home() {
             pushToHistory("Error starting challenge.", 'error');
         }
         setIsLoading(false);
-        return;
-    }
 
-    if (command.startsWith('edit ')) {
+    } else if (command.startsWith('edit ')) {
         const filename = command.split(' ')[1];
-        if (!filename) return setIsLoading(false);
-        try {
-            const res = await fetch(`${API_URL}/exec`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId, code: `cat ${filename}` })
-            });
-            const data = await res.json();
-            if (data.output) {
-                setEditorFilename(filename);
-                setEditorContent(data.output);
-                setIsEditorOpen(true);
-            } else {
-                pushToHistory("File not found.", 'error');
+        if (!filename) {
+            setIsLoading(false);
+        } else {
+            try {
+                const res = await fetch(`${API_URL}/exec`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, code: `cat ${filename}` })
+                });
+                const data = await res.json();
+                if (data.output) {
+                    setEditorFilename(filename);
+                    setEditorContent(data.output);
+                    setIsEditorOpen(true);
+                } else {
+                    pushToHistory("File not found.", 'error');
+                }
+            } catch (e) {
+                pushToHistory("Error reading file.", 'error');
             }
-        } catch (e) {
-            pushToHistory("Error reading file.", 'error');
+            setIsLoading(false);
         }
-        setIsLoading(false);
-        return;
-    }
-
-    if (command === 'verify') {
+    
+    } else if (command === 'verify') {
         try {
             const res = await fetch(`${API_URL}/challenge/verify`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionId })
             });
             const data = await res.json();
@@ -366,116 +390,75 @@ export default function Home() {
             pushToHistory("Error verifying.", 'error');
         }
         setIsLoading(false);
-        return;
-    }
 
-    if (command.startsWith('visualize ')) {
-        const vizId = command.split(' ')[1];
-        if (streamRef.current) streamRef.current.close(); // Close any existing stream
-        
-        pushToHistory(`Starting ${vizId} visualization...`);
-        const evtSource = new EventSource(`${API_URL}/stream?sessionId=${sessionId}&vizId=${vizId}`);
-        streamRef.current = evtSource;
+    // --- Server-Side Commands ---
+    } else {
+        // --- Streaming Commands ---
+        if (command.startsWith('visualize ')) {
+            const vizId = command.split(' ')[1];
+            if (streamRef.current) streamRef.current.close();
+            pushToHistory(`Starting ${vizId} visualization...`);
+            const evtSource = new EventSource(`${API_URL}/stream?sessionId=${sessionId}&vizId=${vizId}`);
+            streamRef.current = evtSource;
+            setHistory(prev => [...prev, { text: "", type: 'output' }]); 
+            evtSource.onmessage = (event) => {
+                const text = atob(event.data);
+                setHistory(prev => {
+                    const newHistory = [...prev];
+                    newHistory[newHistory.length - 1] = { text, type: 'output' }; 
+                    return newHistory;
+                });
+            };
+            evtSource.addEventListener('close', () => { evtSource.close(); streamRef.current = null; setIsLoading(false); pushToHistory("Finished."); });
+            evtSource.onerror = () => { evtSource.close(); streamRef.current = null; setIsLoading(false); pushToHistory("Stream failed.", 'error'); };
 
-        setHistory(prev => [...prev, { text: "", type: 'output' }]); 
-        evtSource.onmessage = (event) => {
-            const text = atob(event.data);
-            setHistory(prev => {
-                const newHistory = [...prev];
-                newHistory[newHistory.length - 1] = { text, type: 'output' }; 
-                return newHistory;
-            });
-        };
-        evtSource.addEventListener('close', () => {
-            evtSource.close();
-            streamRef.current = null;
+        } else if (command === 'top') {
+            if (streamRef.current) streamRef.current.close();
+            pushToHistory("Starting 'top' command. Press Ctrl+C to stop.", 'header');
+            pushToHistory("CPU %\tMEM USAGE\tNET I/O\tBLOCK I/O", 'info');
+            setHistory(prev => [...prev, { text: "Gathering data...", type: 'output' }]);
+            const evtSource = new EventSource(`${API_URL}/stats?sessionId=${sessionId}`);
+            streamRef.current = evtSource;
+            evtSource.onmessage = (event) => {
+                const text = atob(event.data);
+                setHistory(prev => {
+                    const newHistory = [...prev];
+                    newHistory[newHistory.length - 1] = { text: text, type: 'output' };
+                    return newHistory;
+                });
+            };
+            evtSource.onerror = () => { evtSource.close(); streamRef.current = null; setIsLoading(false); pushToHistory("'top' command stream closed or failed.", 'error'); setTimeout(() => inputRef.current?.focus(), 10); };
+            evtSource.addEventListener('close', () => { evtSource.close(); streamRef.current = null; setIsLoading(false); pushToHistory("Top command finished.", 'output'); setTimeout(() => inputRef.current?.focus(), 10); });
+
+        // --- Background Job ---
+        } else if (command.endsWith(' &')) {
+            const bgCommand = command.slice(0, -2).trim();
+            pushToHistory(`[+] Starting background process: ${bgCommand}`);
+            fetch(`${API_URL}/exec`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId, code: bgCommand, background: true }),
+            }).catch(err => console.error("Background command failed to send:", err));
             setIsLoading(false);
-            pushToHistory("Finished.");
-        });
-        evtSource.onerror = () => {
-            evtSource.close();
-            streamRef.current = null;
-            setIsLoading(false);
-            pushToHistory("Stream failed.", 'error');
-        };
-        return;
-    }
-    
-    // --- STREAMING ENDPOINT (SSE for 'top' command) ---
-    if (command === 'top') {
-        if (streamRef.current) streamRef.current.close(); // Close any existing stream
-
-        pushToHistory("Starting 'top' command. Press Ctrl+C to stop.", 'header');
-        pushToHistory("CPU %\tMEM USAGE\tNET I/O\tBLOCK I/O", 'info'); // Headers for top command
-        setHistory(prev => [...prev, { text: "Gathering data...", type: 'output' }]); // Placeholder for dynamic update
-
-        const evtSource = new EventSource(`${API_URL}/stats?sessionId=${sessionId}`);
-        streamRef.current = evtSource;
-        
-        evtSource.onmessage = (event) => {
-            const text = atob(event.data); // Decode base64 stats string
-            setHistory(prev => {
-                const newHistory = [...prev];
-                // Update the last line (placeholder) with the new stats data
-                newHistory[newHistory.length - 1] = { text: text, type: 'output' }; 
-                return newHistory;
-            });
-        };
-
-        evtSource.onerror = () => {
-            evtSource.close();
-            streamRef.current = null;
-            setIsLoading(false);
-            pushToHistory("'top' command stream closed or failed.", 'error');
             setTimeout(() => inputRef.current?.focus(), 10);
-        };
 
-        evtSource.addEventListener('close', () => { // Custom close event from backend
-            evtSource.close();
-            streamRef.current = null;
-            setIsLoading(false);
-            pushToHistory("Top command finished.", 'output');
-            setTimeout(() => inputRef.current?.focus(), 10);
-        });
-        
-        // This command keeps running, so we don't set isLoading to false until stream ends
-        return; 
-    }
-    
-    // --- Background Job Handling ---
-    if (command.endsWith(' &')) {
-        const bgCommand = command.slice(0, -2).trim();
-        pushToHistory(`[+] Starting background process: ${bgCommand}`);
-        
-        // Fire-and-forget
-        fetch(`${API_URL}/exec`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId, code: bgCommand, background: true }),
-        }).catch(err => {
-            // We can't easily show this error in history, but we should log it.
-            console.error("Background command failed to send:", err);
-        });
-
-        setIsLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 10);
-        return;
-    }
-
-    // Standard Exec
-    try {
-      const response = await fetch(`${API_URL}/exec`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, code: command }),
-      });
-      const data = await response.json();
-      pushToHistory(data.error || data.output || "");
-    } catch (error) {
-      pushToHistory("Network Error", 'error');
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 10);
+        // --- Standard Exec ---
+        } else {
+            console.log(">>> EXECUTING STANDARD COMMAND:", command);
+            try {
+                const response = await fetch(`${API_URL}/exec`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, code: command }),
+                });
+                const data = await response.json();
+                pushToHistory(data.error || data.output || "");
+            } catch (error) {
+                pushToHistory("Network Error", 'error');
+            } finally {
+                setIsLoading(false);
+                setTimeout(() => inputRef.current?.focus(), 10);
+            }
+        }
     }
   };
 

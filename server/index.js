@@ -48,6 +48,20 @@ app.post('/exec', async (req, res) => {
     }
 });
 
+app.post('/autocomplete', async (req, res) => {
+    const { sessionId, partial } = req.body;
+    if (!sessionId || partial === undefined) {
+        return res.status(400).json({ error: 'Missing sessionId or partial' });
+    }
+
+    try {
+        const completions = await sessionManager.getCompletions(sessionId, partial);
+        res.json({ completions });
+    } catch (error) {
+        res.status(500).json({ error: 'Autocomplete failed', details: error.message });
+    }
+});
+
 // --- CHALLENGE ENDPOINTS ---
 
 app.get('/challenges', (req, res) => {
