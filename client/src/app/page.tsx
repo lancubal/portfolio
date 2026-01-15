@@ -8,6 +8,7 @@ interface HistoryItem {
   text: string;
   type?: 'cmd' | 'output' | 'error' | 'header' | 'logo' | 'info';
   cwd?: string;
+  username?: string;
 }
 
 export default function Home() {
@@ -103,7 +104,7 @@ export default function Home() {
           e.preventDefault();
           streamRef.current.close();
           streamRef.current = null;
-          setHistory(prev => [...prev, { text: '^C', type: 'cmd' }]);
+          setHistory(prev => [...prev, { text: '^C', type: 'cmd', cwd: cwd, username: username }]);
           setIsLoading(false);
           setTimeout(() => inputRef.current?.focus(), 10);
         }
@@ -114,7 +115,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown);
     };
-  }, [streamRef]); // Dependency array ensures the listener always has the latest ref
+  }, [streamRef, cwd, username]); // Dependency array ensures the listener always has the latest ref
 
   const handleTerminalClick = () => {
     inputRef.current?.focus();
@@ -223,8 +224,9 @@ export default function Home() {
                         const lastPartIndex = input.lastIndexOf(' ');
                         const newInput = input.substring(0, lastPartIndex) + ` ${completed}`;
                         setInput(newInput + (completed.endsWith('/') ? '' : ' '));
-                    } else {
-                        setHistory(prev => [...prev, { text: input, type: 'cmd', cwd: cwd }]);
+                    }
+                     else {
+                        setHistory(prev => [...prev, { text: input, type: 'cmd', cwd: cwd, username: username }]);
                         setHistory(prev => [...prev, { text: data.completions.join('\t'), type: 'output' }]);
                     }
                 }
@@ -235,7 +237,7 @@ export default function Home() {
             if (matches.length === 1) {
                 setInput(matches[0] + ' ');
             } else if (matches.length > 1) {
-                setHistory(prev => [...prev, { text: input, type: 'cmd', cwd: cwd }]);
+                setHistory(prev => [...prev, { text: input, type: 'cmd', cwd: cwd, username: username }]);
                 setHistory(prev => [...prev, { text: matches.join('\t'), type: 'output' }]);
             }
         }
@@ -258,7 +260,7 @@ export default function Home() {
     setInput('');
     setIsLoading(true);
 
-    setHistory(prev => [...prev, { text: command, type: 'cmd', cwd: cwd }]);
+    setHistory(prev => [...prev, { text: command, type: 'cmd', cwd: cwd, username: username }]);
     
     // --- START COMMAND HANDLING ---
 
@@ -289,7 +291,7 @@ export default function Home() {
             "Available Commands:", "  ls projects    - View my projects", "  cat about-me.md- My bio",
             "  visualize <id> - Run algo demo (bubble, selection, quick, pathfinder, dfs)", "  challenge      - Enter coding mode",
             "  command &      - Run a command in the background", "  -- System --", "  about          - View system architecture",
-            "  neofetch       - Display system info (style!)", "  top            - Real-time container resource usage",
+            "  top            - Real-time container resource usage",
             "  help           - Show this help message", "  clear          - Clear terminal",
             "  [linux]        - Run real commands (ls, python, etc.)"
         ];
@@ -480,10 +482,8 @@ export default function Home() {
     <main className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 font-mono text-sm md:p-10">
       <CodeEditor isOpen={isEditorOpen} filename={editorFilename} initialContent={editorContent} onSave={handleEditorSave} onClose={handleEditorClose} />
       <div className="relative flex h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-zinc-800 bg-black shadow-2xl" onClick={handleTerminalClick}>
-        <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4 py-2">
-          <div className="flex gap-2"><div className="h-3 w-3 rounded-full bg-red-500/80"></div><div className="h-3 w-3 rounded-full bg-yellow-500/80"></div><div className="h-3 w-3 rounded-full bg-green-500/80"></div></div>
-          <div className="text-zinc-400">{username}@RootResume: {cwd}</div>
-          <div className="w-10"></div>
+        <div className="flex items-center justify-center border-b border-zinc-800 bg-gray-800 px-4 py-2">
+          <div className="text-zinc-400 text-sm font-bold">{username}@RootResume: {cwd}</div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
           {isInitializing && <div className="animate-pulse text-green-500">Booting RootResume OS...</div>}
@@ -491,7 +491,7 @@ export default function Home() {
             <div key={i} className="whitespace-pre-wrap break-words leading-relaxed mb-1">
               {item.type === 'cmd' ? (
                 <div className="text-green-400 font-bold">
-                  <span className="shrink-0">{username}@RootResume:{item.cwd || '~'}$ </span>
+                  <span className="shrink-0">{(item.username || username)}@RootResume:{item.cwd || '~'}$ </span>
                   <span>{item.text}</span>
                 </div>
               ) : (
